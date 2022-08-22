@@ -1,0 +1,189 @@
+#include <Arduino.h>
+#include <U8g2lib.h>
+#ifdef U8X8_HAVE_HW_SPI
+#include <SPI.h>
+#ifdef U8X8_HAVE_HW_I2C
+#include <Wire.h>
+#endif
+
+U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);  // Adafruit ESP8266/32u4/ARM Boards + FeatherWing OLED
+
+volatile int i = 5; // numer pinu dla pierwszej diody, dla pewności powinno być volatile
+volatile int j = 0; // zmienna do trybu auto-niech 0 oznacza tryb auto wyłączony a 1 niech oznacza tryb auto włączony
+
+int przycisk_menu = 0;
+int menu = 0;
+int displayHome =0;
+// -------------------------------------------------------------------  zmiana pasma w górę 
+void zmiana()   // --- funkcja zmiana wywoływana z przerwania INT0
+{
+  if (j == 0)
+  {
+    return;
+  }
+  for (int k = 5; k < 12; k++) // stan diód ustawiamy w pętli w górę
+  {
+    if (k == i)digitalWrite(k, HIGH); // zapalamy diodę
+    else digitalWrite(k, LOW);    // gasimy wszystkie inne
+  }
+  i++;            // zmiana diody w górę
+  if (i == 12) i = 5; // w kółko Macieju :-)
+}
+// -------------------------------------------------------------------  zmiana pasma w dół
+void zmianaWdol()
+{
+  if (j == 0)
+  {
+    return;
+  }
+  for (int k = 11; k > 4; k--) // stan diód ustawiamy w pętli w dół
+  {
+    if (k == i)digitalWrite(k, HIGH); // zapalamy diodę
+    else digitalWrite(k, LOW);    // gasimy wszystkie inne
+  }
+  i--;            // zmiana diody w dół
+  if (i == 4) i = 11; // w kółko Macieju :-)
+}
+
+//void incrementMenu()
+//{
+//    menu++;
+//}
+
+
+void setup(void) {
+  u8g2.begin();
+
+  pinMode(4, INPUT_PULLUP);  // pin dla pasma 160
+  pinMode(5, INPUT_PULLUP);  // pin dla pasma 160
+  pinMode(6, INPUT_PULLUP);  // pin dla pasma 80
+  pinMode(7, INPUT_PULLUP);  // pin dla pasma 40
+  pinMode(8, INPUT_PULLUP);  // pin dla pasma 20
+  pinMode(9, INPUT_PULLUP);  // pin dla pasma 15
+  pinMode(10, INPUT_PULLUP); // pin dla pasma 10
+  pinMode(11, INPUT_PULLUP); // pin dla pasma 6
+  pinMode(12, INPUT_PULLUP); // pin wykrycie auto - manual;  wykrycie masy załącza tryb auto
+
+  pinMode(2, INPUT_PULLUP); //digitalWrite(2, HIGH); // na pinie 2 podpinamy Buttona zmiana w górę
+  pinMode(3, INPUT_PULLUP); //digitalWrite(3, HIGH); // na pinie 3 podpinamy Buttona zmiana w dół
+  pinMode(4, INPUT_PULLUP); //digitalWrite(4, HIGH); // na pinie 4 podpinamy Buttona Menu-akceptacja
+  
+  attachInterrupt(0, zmiana, FALLING);   // ust. przerwanie INT0 na funkcję zmiana
+  // przy wciśnięciu Buttona (zmiana stanu z HIGH na LOW )
+  
+  for (int k = 5; k < 12; k++) 
+  {
+    pinMode(k, OUTPUT);  // w pętli konfiguruję piny 5-11 dla diód
+    digitalWrite(k, LOW);
+  }
+
+  attachInterrupt(1, zmianaWdol, FALLING);   // ust. przerwanie INT0 na funkcję zmianaWdol
+  // przy wciśnięciu Buttona (zmiana stanu z HIGH na LOW )
+  
+  for (int k = 11; k > 4; k--) {
+    pinMode(k, OUTPUT);  // w pętli konfiguruję piny 11-5 dla diód
+    digitalWrite(k, LOW);
+  }
+
+  // attachInterrupt(2, incrementMenu, FALLING);  // ---------------------------- zmień cyfre!!!!!!!
+
+  digitalWrite(6, HIGH); i = 7; // -- jeśli na dzień dobry ma być zapalone pasmo 80
+
+}
+
+void displayMenu(string s)
+{
+   u8g2.clearBuffer();                 // clear the internal memory
+   u8g2.setFont(u8g2_font_bubble_tr);  // choose a suitable font
+   u8g2.setCursor(18, 20);             //Pozycjonowanie kursora dla funkcji print
+   u8g2.print(s);                 // wyświtlnie liczb i zmiennych
+}
+
+void displayHome()
+{
+  u8g2.clearBuffer();          // clear the internal memory
+  u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font
+  u8g2.drawStr(5, 9, "BAND    PWR    SWR"); // write something to the internal memory
+  u8g2.setCursor(28, 20); //Pozycjonowanie kursora dla funkcji print
+  u8g2.print("m");  // wyświtlnie liczb i zmiennych
+  u8g2.setCursor(68, 20); //Pozycjonowanie kursora dla funkcji print
+  u8g2.print("W");  // wyświtlnie liczb i zmiennych
+  u8g2.drawStr(70, 31, "by SP8FR"); // write something to the internal memory
+
+  if(j == 0)
+  {
+      u8g2.setCursor(8, 31); //Pozycjonowanie kursora dla funkcji print
+      u8g2.print("auto");  // wyświtlnie liczb i zmiennych
+  }
+  else if (j == 1)
+  {
+      u8g2.setCursor(3, 31); //Pozycjonowanie kursora dla funkcji print
+      u8g2.print("manual");  // wyświtlnie liczb i zmiennych
+  }
+
+  string values[] = {"0", "0", "0", "0", "0", "160", "80", "40", "20", "15", "10", "6"};
+  int cursorV[]   = {0, 0, 0, 0, 0, 7, 12, 12, 12, 12, 12, 18};
+  
+  for (int i = 5; i < 12; i++)
+  {
+      if (digitalRead (i) == HIGH) // wykrycie pasma 160
+      {
+          u8g2.setCursor(cursorV[i], 20); //Pozycjonowanie kursora dla funkcji print
+          u8g2.print(values[i]);  // wyświtlnie liczb i zmiennych
+      }   
+  }
+}
+
+void loop(void) 
+{
+
+  if (digitalRead (12) == LOW) // wykrycie auto
+  {
+      for (int k = 5; k < 12; k++) 
+      {
+          pinMode(k, INPUT);  // w pętli konfiguruję piny 5-11 dla diód
+          //    digitalWrite(k, LOW);
+      }
+      j = 0; // jeśli jest 0 to w trybie auto przyciski w górę i w dół nie dzałają
+
+  }
+  else // w innym przypadku
+  {
+      for (int k = 5; k < 12; k++) 
+      {
+          pinMode(k, OUTPUT);  // w pętli konfiguruję piny 5-11 dla diód
+          //    digitalWrite(k, LOW);
+      }
+      j = 1; // jeśli jest 1 to w trubie manual przyciski w górę i w dół  dzałają
+  }
+
+  // -------------------------------------------------------------------  increasing menu value
+  if (digitalRead (4) ==  LOW)
+  {
+     while(digitalRead (4) != HIGH)
+     {
+          //sleep(10ms)
+     }
+     menu = (menu + 1)%4;
+  }
+
+   // -------------------------------------------------------------------  choosing which screen display
+  switch (menu)
+  {
+    case 0:
+      displayHome();
+      break;
+    case 1:
+      displayMenu("Menu1");
+      break;
+    case 2:
+      displayMenu("Menu2");
+      break;
+    case 3:
+      displayMenu("Menu3");
+      break;      
+     default:
+      break;
+  }
+  u8g2.sendBuffer();					// transfer internal memory to the display
+}
