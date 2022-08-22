@@ -9,7 +9,7 @@
 U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);  // Adafruit ESP8266/32u4/ARM Boards + FeatherWing OLED
 
 volatile int i = 5; // numer pinu dla pierwszej diody, dla pewności powinno być volatile
-volatile int j = 0; // zmienna do trybu auto-niech 0 oznacza tryb auto wyłączony a 1 niech oznacza tryb auto włączony
+volatile int j = 0; // zmienna do trybu auto-niech 0 oznacza tryb auto wyłączony-manual, a 1 niech oznacza tryb auto włączony
 
 int przycisk_menu = 0;
 int menu = 0;
@@ -48,7 +48,7 @@ void zmianaWdol()
 void setup(void) {
   u8g2.begin();
 
-  pinMode(4, INPUT_PULLUP);  // pin dla pasma 160
+  pinMode(4, INPUT_PULLUP);  // pin Menu
   pinMode(5, INPUT_PULLUP);  // pin dla pasma 160
   pinMode(6, INPUT_PULLUP);  // pin dla pasma 80
   pinMode(7, INPUT_PULLUP);  // pin dla pasma 40
