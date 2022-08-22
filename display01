@@ -45,12 +45,6 @@ void zmianaWdol()
   if (i == 4) i = 11; // w kółko Macieju :-)
 }
 
-//void incrementMenu()
-//{
-//    menu++;
-//}
-
-
 void setup(void) {
   u8g2.begin();
 
